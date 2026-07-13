@@ -39,20 +39,47 @@ export class YokisHTTPPlatform implements DynamicPlatformPlugin {
     await this.client.loginUser();
     await this.client.fetchInstallation();
 
-    for (const uid of Object.keys(this.client.modules)) {
+    for (const box of this.client.boxes.values()) {
 
-      const uuid = this.api.hap.uuid.generate('Yokis-MTR2000ER-' + this.client.modules[uid].uid);
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+      for (const module of box.modules.values()) {
 
-      if (existingAccessory) {
-        this.log.debug('Restoring existing accessory from cache:', existingAccessory.displayName);
-        new YokisHTTPAccessory(this, existingAccessory);
-      } else {
-        this.log.debug('Adding new accessory:', this.client.modules[uid].name);
-        const accessory = new this.api.platformAccessory(this.client.modules[uid].name, uuid);
-        accessory.context.device = this.client.modules[uid];
-        new YokisHTTPAccessory(this, accessory);
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        const uuid = this.api.hap.uuid.generate(
+          `Yokis-MTR2000ER-${box.boxId}-${module.uid}`,
+        );
+
+        const existingAccessory = this.accessories.find(
+          accessory => accessory.UUID === uuid,
+        );
+
+        if (existingAccessory) {
+          this.log.debug(
+            'Restoring existing accessory from cache:',
+            existingAccessory.displayName,
+          );
+
+          existingAccessory.context.device = module;
+
+          new YokisHTTPAccessory(this, existingAccessory);
+
+        } else {
+
+          this.log.debug('Adding new accessory:', module.name);
+
+          const accessory = new this.api.platformAccessory(
+            module.name,
+            uuid,
+          );
+
+          accessory.context.device = module;
+
+          new YokisHTTPAccessory(this, accessory);
+
+          this.api.registerPlatformAccessories(
+            PLUGIN_NAME,
+            PLATFORM_NAME,
+            [accessory],
+          );
+        }
       }
     }
     setInterval(() => {

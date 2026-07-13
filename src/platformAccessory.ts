@@ -1,9 +1,13 @@
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 
 import { YokisHTTPPlatform } from './platform';
+import { YokisModule } from './YokisClient';
 
 export class YokisHTTPAccessory {
   private service: Service;
+  private get module(): YokisModule {
+    return this.accessory.context.device as YokisModule;
+  }
 
   constructor(
     private readonly platform: YokisHTTPPlatform,
@@ -11,15 +15,30 @@ export class YokisHTTPAccessory {
   ) {
 
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Yokis')
-      .setCharacteristic(this.platform.Characteristic.Model, 'MTR2000ER')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.uid);
+      .setCharacteristic(
+        this.platform.Characteristic.Manufacturer,
+        'Yokis',
+      )
+      .setCharacteristic(
+        this.platform.Characteristic.Model,
+        'MTR2000ER',
+      )
+      .setCharacteristic(
+        this.platform.Characteristic.SerialNumber,
+        this.module.uid,
+      );
 
-    this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
+    this.service =
+      this.accessory.getService(this.platform.Service.Lightbulb)||
+      this.accessory.addService(this.platform.Service.Lightbulb);
 
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
+    this.service.setCharacteristic(
+      this.platform.Characteristic.Name,
+      this.module.name,
+    );
 
-    this.service.getCharacteristic(this.platform.Characteristic.On)
+    this.service
+      .getCharacteristic(this.platform.Characteristic.On)
       .onSet(this.setOn.bind(this))
       .onGet(this.getOn.bind(this));
 
@@ -30,26 +49,40 @@ export class YokisHTTPAccessory {
 
   async updateAccessoryState() {
     try {
-      const module = this.platform.client.modules[this.accessory.context.device.uid];
-      const isOn = module.isOn ?? false;
-      this.platform.log.debug(`Updating accessory state: accessory ${module.name} is on: ${isOn}`);
-      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
+      this.platform.log.debug(
+        `Updating accessory state: accessory ${this.module.name} is on: ${this.module.isOn}`,
+      );
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.On,
+        this.module.isOn,
+      );
     } catch (error) {
-      this.platform.log.error('[updateAccessoryState] Error on getModuleStatus response:', error);
+      this.platform.log.error(
+        '[updateAccessoryState] Error on getModuleStatus response:',
+        error,
+      );
     }
   }
 
   async setOn(value: CharacteristicValue) {
-    await this.platform.client.toggleModule(this.accessory.context.device.uid, value as boolean);
-    this.platform.client.modules[this.accessory.context.device.uid].isOn = value as boolean;
+    await this.platform.client.toggleModule(
+      this.module,
+      value as boolean,
+    );
+
+    this.module.isOn = value as boolean;
+
     this.updateAccessoryState();
+
     this.platform.log.debug('Set Characteristic On ->', value);
   }
 
   async getOn(): Promise<CharacteristicValue> {
-    const module = this.platform.client.modules[this.accessory.context.device.uid];
-    const isOn = module.isOn ?? false;
-    this.platform.log.debug(`Getting characteristic on status for accessory ${module.name} is on: ${isOn}`);
-    return isOn;
+    this.platform.log.debug(
+      `Getting characteristic on status for accessory ${this.module.name} is on: ${this.module.isOn}`,
+    );
+
+    return this.module.isOn;
   }
 }

@@ -3,25 +3,32 @@ import { Logger } from 'homebridge';
 
 const BASE_ENDPOINT = 'https://www.yokiscloud.fr/api/1_28/individuals/';
 
-class YokisModule {
-  name: string;
-  uid: string;
-  isOn?: boolean;
+export class YokisBox {
 
-  constructor(name: string, uid: string) {
-    this.name = name;
-    this.uid = uid;
-  }
+  public readonly modules = new Map<string, YokisModule>();
+
+  constructor(
+    public readonly boxId: string,
+  ) {}
 }
 
+export class YokisModule {
+
+  public isOn = false;
+
+  constructor(
+    public readonly name: string,
+    public readonly uid: string,
+    public readonly boxId: string,
+  ) {}
+}
 export class YokisClient {
-  logger: Logger;
-  username: string;
-  password: string;
+  private readonly logger: Logger;
+  private readonly username: string;
+  private readonly password: string;
   userId?: string;
-  boxId?: string;
+  public readonly boxes = new Map<string, YokisBox>();
   token?: string;
-  modules: { [key: string]: YokisModule } = {};
 
   constructor(logger: Logger, username: string, password: string) {
     this.logger = logger;
@@ -93,7 +100,10 @@ export class YokisClient {
     await this.postHttpRequest(BASE_ENDPOINT+'login', payload)
       .then((response) => {
         this.userId = response.data.id;
-        this.boxId = response.data.boxes[0].boxId;
+        this.boxes.clear();
+        for (const box of response.data.boxes) {
+          this.boxes.set(box.boxId, new YokisBox(box.boxId));
+        }
         this.token = response.data.token;
       })
       .catch((error) => {
@@ -102,38 +112,65 @@ export class YokisClient {
   }
 
   async fetchInstallation() {
-    const url = BASE_ENDPOINT+this.userId+'/box/'+this.boxId;
-    await this.authentifiedGetHttpRequest(url, this.token!)
-      .then((response) => {
-        for (const module of response.data.modules) {
-          if (module.function === 4) {
-            this.modules[module.uid] = new YokisModule(module.name, module.uid);
+    for (const box of this.boxes.values()) {
+      const url = BASE_ENDPOINT + this.userId + '/box/' + box.boxId;
+
+      await this.authentifiedGetHttpRequest(url, this.token!)
+        .then((response) => {
+          for (const module of response.data.modules) {
+            if (module.function === 4) {
+              box.modules.set(
+                module.uid,
+                new YokisModule(
+                  module.name,
+                  module.uid,
+                  box.boxId,
+                ),
+              );
+            }
           }
-        }
-      })
-      .catch((error) => {
-        this.logger.error('Error making HTTP request:', error);
-      });
+        })
+        .catch((error) => {
+          this.logger.error('Error making HTTP request:', error);
+        });
+    }
   }
 
   async fetchStatus() {
-    const url = BASE_ENDPOINT+this.userId+'/box/'+this.boxId+'/modulestable';
-    await this.authentifiedGetHttpRequest(url, this.token!)
-      .then((response) => {
-        for (const module of response.data.data.table) {
-          const isOn = module.var === 0 ? false : true;
-          this.logger.debug(`Result of fetch status: module ${this.modules[module.uid].name} is on: ${isOn}, var value: ${module.var}`);
-          this.modules[module.uid].isOn = isOn;
-        }
-      })
-      .catch((error) => {
-        this.logger.error('Error making HTTP request:', error);
-      });
+    for (const box of this.boxes.values()) {
+      const url = BASE_ENDPOINT + this.userId + '/box/' + box.boxId + '/modulestable';
+
+      await this.authentifiedGetHttpRequest(url, this.token!)
+        .then((response) => {
+          for (const module of response.data.data.table) {
+
+            const currentModule = box.modules.get(module.uid);
+
+            if (!currentModule) {
+              continue;
+            }
+
+            const isOn = module.var !== 0;
+
+            this.logger.debug(
+              `Result of fetch status: module ${currentModule.name} is on: ${isOn}, var value: ${module.var}`,
+            );
+
+            currentModule.isOn = isOn;
+          }
+        })
+        .catch((error) => {
+          this.logger.error('Error making HTTP request:', error);
+        });
+    }
   }
 
-  async toggleModule(moduleUid: string, on: boolean) {
-    const url = BASE_ENDPOINT+this.userId+'/box/'+this.boxId+'/commands';
-    const payload = JSON.stringify({'cmd': `command.xml?action=order&id=${moduleUid}&order=${on ? 'on' : 'off'}`});
+  async toggleModule(module: YokisModule, on: boolean) {
+    const url = BASE_ENDPOINT + this.userId + '/box/' + module.boxId + '/commands';
+    const payload = JSON.stringify({
+      cmd: `command.xml?action=order&id=${module.uid}&order=${on ? 'on' : 'off'}`,
+    });
+
     await this.authentifiedPostHttpRequest(url, this.token!, payload)
       .then((response) => {
         this.logger.debug('Toggle Result:', response.data);
