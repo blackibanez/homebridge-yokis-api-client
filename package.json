@@ -9,7 +9,7 @@
     "url": "https://github.com/blackibanez/homebridge-yokis-api-client"
   },
   "bugs": {
-    "url": "https://github.com/blackibanez/homebridge-yokis-api-client/pulls"
+    "url": "https://github.com/blackibanez/homebridge-yokis-api-client/issues"
   },
   "engines": {
     "node": "^18.16.0 || ^20.8.0",
