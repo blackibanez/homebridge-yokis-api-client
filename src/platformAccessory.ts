@@ -1,6 +1,6 @@
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 
-import { YokisHTTPPlatform } from './platform';
+import { YokisAPIPlatform } from './platform';
 import { YokisModule } from './YokisClient';
 
 export class YokisHTTPAccessory {
@@ -10,7 +10,7 @@ export class YokisHTTPAccessory {
   }
 
   constructor(
-    private readonly platform: YokisHTTPPlatform,
+    private readonly platform: YokisAPIPlatform,
     private readonly accessory: PlatformAccessory,
   ) {
 

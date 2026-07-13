@@ -4,7 +4,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { YokisHTTPAccessory } from './platformAccessory';
 import { YokisClient } from './YokisClient';
 
-export class YokisHTTPPlatform implements DynamicPlatformPlugin {
+export class YokisAPIPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
