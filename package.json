@@ -1,7 +1,7 @@
 {
   "displayName": "Yokis API Client",
   "name": "homebridge-yokis-api-client",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Homebridge plugin to interface with Yokis MTR2000ER wireless switches often used in for lightbulbs.",
   "license": "MIT",
   "repository": {

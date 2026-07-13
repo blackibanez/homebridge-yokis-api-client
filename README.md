@@ -5,7 +5,7 @@
 
 <span align="center">
 
-# Homebridge Yokis HTTP Client Plugin
+# Homebridge Yokis API Client Plugin
 
 </span>
 
@@ -24,7 +24,7 @@ Before you begin, ensure you have the following:
 You can install this plugin from the web interface. Alternatively you can install it with:
 
 ```shell
-npm install -g homebridge-yokis-http-client
+npm install -g homebridge-yokis-api-client
 ```
 
 ### Configuration
@@ -37,8 +37,8 @@ Example configuration:
 
 ```json
 {
-    "platform": "YokisHTTPClient",
-    "name": "YokisHTTPClient",
+    "platform": "YokisAPIClient",
+    "name": "YokisAPIClient",
     "username": "foo@bar.xyz",
     "password": "P@ssw0rd"
 }
