@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "YokisHTTPClient",
+  "pluginAlias": "YokisAPIClient",
   "pluginType": "platform",
   "headerDisplay": "Please enter the username and password you use in your Yokis YnO app",
   "schema": {
